@@ -15,7 +15,7 @@ class WindowManager {
         let pid = frontmostApp.processIdentifier
         let appRef = AXUIElementCreateApplication(pid)
         
-        var windowRef: AXUIElement?
+        var windowRef: CFTypeRef?
         let result = AXUIElementCopyAttributeValue(appRef, kAXFocusedWindowAttribute as CFString, &windowRef)
         
         guard result == .success, let window = windowRef else {
@@ -23,7 +23,7 @@ class WindowManager {
             return
         }
         
-        resizeWindow(window)
+        resizeWindow(window as! AXUIElement)
     }
     
     private func resizeWindow(_ window: AXUIElement) {
@@ -46,14 +46,16 @@ class WindowManager {
     }
     
     private func setWindowPosition(_ window: AXUIElement, position: CGPoint) {
-        var positionValue = AXValueCreate(AXValueType.cgPoint, &position)
+        var mutablePosition = position
+        let positionValue = AXValueCreate(AXValueType.cgPoint, &mutablePosition)
         if let positionValue = positionValue {
             AXUIElementSetAttributeValue(window, kAXPositionAttribute as CFString, positionValue)
         }
     }
     
     private func setWindowSize(_ window: AXUIElement, size: CGSize) {
-        var sizeValue = AXValueCreate(AXValueType.cgSize, &size)
+        var mutableSize = size
+        let sizeValue = AXValueCreate(AXValueType.cgSize, &mutableSize)
         if let sizeValue = sizeValue {
             AXUIElementSetAttributeValue(window, kAXSizeAttribute as CFString, sizeValue)
         }
