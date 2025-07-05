@@ -27,7 +27,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     @objc private func statusBarButtonClicked() {
         let menu = NSMenu()
-        menu.addItem(NSMenuItem(title: "Resize Window (⌘+⌥+R)", action: #selector(resizeActiveWindow), keyEquivalent: ""))
+        menu.addItem(NSMenuItem(title: "Expand Left (⌘+⌥+←)", action: #selector(resizeWindowLeft), keyEquivalent: ""))
+        menu.addItem(NSMenuItem(title: "Expand Right (⌘+⌥+→)", action: #selector(resizeWindowRight), keyEquivalent: ""))
         menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         
@@ -35,22 +36,29 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     private func registerHotkey() {
-        // Register global hotkey using Carbon API for better reliability
-        let hotKeyId: UInt32 = 1
-        let keyCode: UInt32 = 15 // R key
+        // Register global hotkeys using Carbon API for better reliability
+        let signature = OSType(0x57696E64) // 'Wind'
         let modifierFlags: UInt32 = UInt32(cmdKey + optionKey)
         
+        // Register Cmd+Opt+Left Arrow
+        registerSingleHotkey(keyCode: 123, hotKeyId: 2, signature: signature, modifierFlags: modifierFlags)
+        
+        // Register Cmd+Opt+Right Arrow
+        registerSingleHotkey(keyCode: 124, hotKeyId: 3, signature: signature, modifierFlags: modifierFlags)
+        
+        installEventHandler()
+    }
+    
+    private func registerSingleHotkey(keyCode: UInt32, hotKeyId: UInt32, signature: OSType, modifierFlags: UInt32) {
         var hotKeyRef: EventHotKeyRef?
-        let signature = OSType(0x57696E64) // 'Wind'
         let hotKeyID = EventHotKeyID(signature: signature, id: hotKeyId)
         
         let status = RegisterEventHotKey(keyCode, modifierFlags, hotKeyID, GetApplicationEventTarget(), 0, &hotKeyRef)
         
         if status == noErr {
-            print("Hotkey registered successfully")
-            installEventHandler()
+            print("Hotkey \(hotKeyId) registered successfully")
         } else {
-            print("Failed to register hotkey: \(status)")
+            print("Failed to register hotkey \(hotKeyId): \(status)")
         }
     }
     
@@ -61,10 +69,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             var hotKeyID = EventHotKeyID()
             let status = GetEventParameter(theEvent, OSType(kEventParamDirectObject), OSType(typeEventHotKeyID), nil, MemoryLayout<EventHotKeyID>.size, nil, &hotKeyID)
             
-            if status == noErr && hotKeyID.id == 1 {
+            if status == noErr {
                 DispatchQueue.main.async {
                     let appDelegate = NSApplication.shared.delegate as! AppDelegate
-                    appDelegate.resizeActiveWindow()
+                    
+                    switch hotKeyID.id {
+                    case 2: // Cmd+Opt+Left Arrow
+                        appDelegate.resizeWindowLeft()
+                    case 3: // Cmd+Opt+Right Arrow
+                        appDelegate.resizeWindowRight()
+                    default:
+                        break
+                    }
                 }
             }
             
@@ -72,8 +88,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }, 1, eventTypes, nil, nil)
     }
     
-    @objc private func resizeActiveWindow() {
-        WindowManager.shared.resizeActiveWindow()
+    @objc private func resizeWindowLeft() {
+        WindowManager.shared.resizeWindowLeft()
+    }
+    
+    @objc private func resizeWindowRight() {
+        WindowManager.shared.resizeWindowRight()
     }
     
     private func requestAccessibilityPermission() {
