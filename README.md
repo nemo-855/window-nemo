@@ -4,6 +4,9 @@ macOS用のウィンドウ管理アプリケーションです。ショートカ
 
 ## 機能
 
+### 動作イメージ
+https://github.com/user-attachments/assets/8f64da59-a561-433a-b88b-b47f958f2ee1
+
 ### ショートカットキー
 
 - **`⌘ + ⌥ + ←`**: 左側拡張モード
